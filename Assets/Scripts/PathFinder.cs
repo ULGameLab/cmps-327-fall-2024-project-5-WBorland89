@@ -24,7 +24,9 @@ public class PathFinder
 {
     List<Node> TODOList = new List<Node>();
     List<Node> DoneList = new List<Node>();
-    Tile goalTile; 
+    Tile goalTile;
+
+    public HashSet<Tile> enemyTiles = new HashSet<Tile>(); // Tracks enemy tiles
 
 
     // This is the constructor
@@ -58,7 +60,23 @@ public class PathFinder
             // You just need to fill code inside this foreach only
             foreach (Tile nextTile in current.tile.Adjacents)
             {
-                
+                if (DoneList.Exists(node => node.tile == nextTile)) continue; // Skip already processed tiles
+
+                double newCost = current.costSoFar + 10; // G cost (assuming horizontal/vertical cost is 10)
+                Node neighbor = TODOList.Find(node => node.tile == nextTile);
+
+                if (neighbor == null || newCost < neighbor.costSoFar)
+                {
+                    double priority = newCost + HeuristicsDistance(nextTile, goalTile); // F = G + H
+                    Node newNode = new Node(nextTile, priority, current, newCost);
+
+                    if (neighbor != null)
+                    {
+                        TODOList.Remove(neighbor); // Update existing node
+                    }
+
+                    TODOList.Add(newNode);
+                }
             }
         }
         return new Queue<Tile>(); // Returns an empty Path if no path is found
@@ -92,7 +110,30 @@ public class PathFinder
             // Just increase the F cost of the enemy tile and the tiles around it by a certain ammount (say 30)
             foreach (Tile nextTile in current.tile.Adjacents)
             {
+                if (DoneList.Exists(node => node.tile == nextTile)) continue; // Skip already processed tiles
 
+                double enemyPenalty = 0;
+                if (enemyTiles.Contains(nextTile)) enemyPenalty += 100; // Penalize enemy tiles
+                foreach (Tile adjacent in nextTile.Adjacents)
+                {
+                    if (enemyTiles.Contains(adjacent)) enemyPenalty += 50; // Penalize tiles near enemies
+                }
+
+                double newCost = current.costSoFar + 10 + enemyPenalty; // G cost + penalty
+                Node neighbor = TODOList.Find(node => node.tile == nextTile);
+
+                if (neighbor == null || newCost < neighbor.costSoFar)
+                {
+                    double priority = newCost + HeuristicsDistance(nextTile, goalTile); // F = G + H
+                    Node newNode = new Node(nextTile, priority, current, newCost);
+
+                    if (neighbor != null)
+                    {
+                        TODOList.Remove(neighbor); // Update existing node
+                    }
+
+                    TODOList.Add(newNode);
+                }
             }
         }
         return new Queue<Tile>(); // Returns an empty Path

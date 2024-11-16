@@ -131,12 +131,94 @@ public class Enemy : MonoBehaviour
     // TODO: Enemy chases the player when it is nearby
     private void HandleEnemyBehavior2()
     {
-        
+        switch (state)
+        {
+            case EnemyState.DEFAULT:
+                // Change color to red to differentiate
+                material.color = Color.red;
+
+                // Check if the player is within vision distance
+                Tile playerTile = playerGameObject.GetComponent<Player>().currentTile;
+                if (Vector3.Distance(transform.position, playerGameObject.transform.position) <= visionDistance)
+                {
+                    // Generate a path to the player using pathfinding
+                    path = pathFinder.FindPathAStar(currentTile, playerTile);
+
+                    if (path.Count > 0)
+                    {
+                        targetTile = path.Dequeue();
+                        state = EnemyState.CHASE;
+                    }
+                }
+                break;
+
+            case EnemyState.CHASE:
+                // Move towards the next tile in the path
+                velocity = targetTile.gameObject.transform.position - transform.position;
+                transform.position = transform.position + (velocity.normalized * speed) * Time.deltaTime;
+
+                // If the target tile is reached
+                if (Vector3.Distance(transform.position, targetTile.gameObject.transform.position) <= 0.05f)
+                {
+                    currentTile = targetTile;
+
+                    if (path.Count > 0)
+                    {
+                        targetTile = path.Dequeue();
+                    }
+                    else
+                    {
+                        state = EnemyState.DEFAULT; // No more tiles to follow
+                    }
+                }
+                break;
+
+            default:
+                state = EnemyState.DEFAULT;
+                break;
+        }
     }
 
     // TODO: Third behavior (Describe what it does)
     private void HandleEnemyBehavior3()
     {
+        switch (state)
+        {
+            case EnemyState.DEFAULT:
+                // Change color to blue to differentiate
+                material.color = Color.blue;
 
+                // Check if the player is too close
+                if (Vector3.Distance(transform.position, playerGameObject.transform.position) <= visionDistance)
+                {
+                    // Use the FindPathAStarEvadeEnemy method to avoid the player
+                    Tile playerTile = playerGameObject.GetComponent<Player>().currentTile;
+                    path = pathFinder.FindPathAStarEvadeEnemy(currentTile, FindWalkableTile());
+
+                    if (path.Count > 0)
+                    {
+                        targetTile = path.Dequeue();
+                        state = EnemyState.MOVING;
+                    }
+                }
+                break;
+
+            case EnemyState.MOVING:
+                // Move to the next tile to evade
+                velocity = targetTile.gameObject.transform.position - transform.position;
+                transform.position = transform.position + (velocity.normalized * speed) * Time.deltaTime;
+
+                // If the target tile is reached
+                if (Vector3.Distance(transform.position, targetTile.gameObject.transform.position) <= 0.05f)
+                {
+                    currentTile = targetTile;
+                    state = EnemyState.DEFAULT;
+                }
+                break;
+
+            default:
+                state = EnemyState.DEFAULT;
+                break;
+        }
     }
 }
